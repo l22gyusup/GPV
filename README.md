@@ -1,8 +1,9 @@
-# MMDV
+# GVP
 
-A UVM-based testbench built from scratch to verify an HLS-generated FFT + DMA
-accelerator RTL. This repository serves as a learning and experimental project
-for practicing scratch-built UVM verification against a non-trivial, protocol-rich DUT.
+**Gyusup Verification Platform** — A UVM-based testbench built from scratch to
+verify an HLS-generated FFT + DMA accelerator RTL. This repository serves as a
+learning and experimental project for practicing scratch-built UVM verification
+against a non-trivial, protocol-rich DUT.
 
 ## Goals
 
@@ -145,20 +146,25 @@ To be elaborated once the DUT is stable:
 ## Repository Layout (Planned)
 
 ```
-mmdv/
-├── hls/               # HLS source and build configurations
-│   ├── src/           # C++ FFT + DMA sources
-│   └── configs/       # TCL scripts for multiple builds (MO / burst sweeps)
-├── rtl/               # Hand-written RTL (ID mapper wrapper, top)
-├── tb/                # UVM testbench
-│   ├── agents/        # AXI, AXI-Lite agents (using VIP)
-│   ├── env/           # UVM environment, config
-│   ├── sequences/     # Constrained random sequences
-│   ├── tests/         # UVM tests
-│   ├── ref/           # Golden reference model (FFT)
-│   └── coverage/      # Coverage groups
-├── sim/               # Simulation run scripts
-├── scripts/           # Build automation (HLS synthesis, RTL packaging)
-└── docs/              # Additional documentation
+gvp/
+├── c_model/          # Pure C golden reference (FFT + DMA behavior)
+├── hls/              # HLS-ready C++ (derived from c_model, with pragmas)
+│   ├── src/          # C++ FFT + DMA sources
+│   └── configs/      # TCL scripts for multiple builds (MO / burst sweeps)
+├── rtl/              # Hand-written RTL (ID mapper wrapper, top)
+├── tb/               # UVM testbench
+│   ├── agents/       # AXI, AXI-Lite agents (using VIP)
+│   ├── env/          # UVM environment, config
+│   ├── sequences/    # Constrained random sequences
+│   ├── tests/        # UVM tests
+│   └── coverage/     # Coverage groups
+├── sim/              # Simulation run scripts
+├── scripts/          # Build automation (HLS synthesis, RTL packaging)
+└── docs/             # Additional documentation
+    └── GVP_GUIDE.md  # Naming and coding conventions
 ```
 
+## Coding Conventions
+
+Naming and coding conventions are documented in
+[`docs/GVP_GUIDE.md`](docs/GVP_GUIDE.md).
