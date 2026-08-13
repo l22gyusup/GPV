@@ -1,0 +1,58 @@
+# Compiled objects and libraries
+*.o
+*.a
+*.so
+*.exe
+*.out
+
+# Test binaries
+c_model/test_fft16
+
+# Editor / backup files
+*.swp
+*.swo
+*~
+.DS_Store
+
+# IDE / editor project files
+.vscode/
+.idea/
+*.iml
+
+# Coverage
+*.gcda
+*.gcno
+*.gcov
+coverage_report/
+
+# Python helpers
+__pycache__/
+*.pyc
+
+# Vitis HLS artifacts
+hls/project*/
+hls/build*/
+hls/*_prj/
+hls/*.log
+hls/*.jou
+hls/*.str
+
+# Vivado / xsim artifacts
+*.cache/
+*.hw/
+*.ip_user_files/
+*.runs/
+*.sim/
+*.srcs/
+*.gen/
+xsim.dir/
+*.wdb
+*.wcfg
+vivado.jou
+vivado*.log
+webtalk*.log
+webtalk*.backup.log
+.Xil/
+
+# OS
+Thumbs.db
