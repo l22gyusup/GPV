@@ -1,7 +1,7 @@
 # GVP
 
 **Gyusup Verification Platform** — A UVM-based testbench built from scratch to
-verify an HLS-generated FFT + DMA accelerator RTL. This repository serves as a
+verify an HLS-generated FFT + DMA RTL. This repository serves as a
 learning and experimental project for practicing scratch-built UVM verification
 against a non-trivial, protocol-rich DUT.
 
@@ -14,7 +14,7 @@ against a non-trivial, protocol-rich DUT.
 
 ## DUT Overview
 
-The DUT is an FFT + DMA accelerator. It reads input samples from external memory
+The DUT is an FFT + DMA block. It reads input samples from external memory
 via an AXI4 Read Master, performs 16-point radix-2 FFTs on batches of samples,
 and writes the results back to external memory via an AXI4 Write Master. A single
 activation processes `N` back-to-back FFTs (`N` is runtime configurable), which
