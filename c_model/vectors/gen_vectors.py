@@ -8,9 +8,12 @@
 # Copyright   : (c) 2026 Gyusup LEE. All rights reserved.
 #------------------------------------------------------------------------------
 
+import argparse
 import csv
+import datetime
 import os
 import sys
+import time
 
 import numpy as np
 
@@ -69,6 +72,11 @@ def build_cases():
     return cases
 
 
+def build_random_cases(num_cases, seed):
+    rng = np.random.default_rng(seed=seed)
+    return [(f"random_{i:06d}", case_random(rng)) for i in range(num_cases)]
+
+
 def write_csv(path, cases):
     with open(path, "w", newline="") as f:
         w = csv.writer(f)
@@ -87,12 +95,41 @@ def write_csv(path, cases):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--regress", action="store_true",
+                        help="Emit a random regression set instead of the "
+                             "curated fixed vectors.")
+    parser.add_argument("--num-cases", type=int, default=1000,
+                        help="Random case count (regress mode only)")
+    parser.add_argument("--seed", type=int, default=None,
+                        help="RNG seed (regress mode; default: current epoch)")
+    parser.add_argument("--out", default=None,
+                        help="Output path (default: curated → "
+                             "vectors/fft16_vectors.csv; regress → "
+                             "vectors/fft16_random_<timestamp>.csv)")
+    args = parser.parse_args()
+
     out_dir = os.path.dirname(os.path.abspath(__file__))
-    out_path = os.path.join(out_dir, "fft16_vectors.csv")
-    cases = build_cases()
-    write_csv(out_path, cases)
-    print(f"Wrote {len(cases)} test cases ({len(cases) * FFT_POINTS} rows) "
-          f"to {out_path}")
+
+    if args.regress:
+        seed = args.seed if args.seed is not None else int(time.time())
+        cases = build_random_cases(args.num_cases, seed)
+        if args.out is None:
+            stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            out_path = os.path.join(out_dir, f"fft16_random_{stamp}.csv")
+        else:
+            out_path = args.out
+        write_csv(out_path, cases)
+        print(f"Wrote {len(cases)} random cases "
+              f"({len(cases) * FFT_POINTS} rows, seed={seed}) to {out_path}")
+    else:
+        out_path = (args.out if args.out is not None
+                    else os.path.join(out_dir, "fft16_vectors.csv"))
+        cases = build_cases()
+        write_csv(out_path, cases)
+        print(f"Wrote {len(cases)} test cases "
+              f"({len(cases) * FFT_POINTS} rows) to {out_path}")
+
     return 0
 
 

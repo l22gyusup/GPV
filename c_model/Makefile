@@ -23,7 +23,16 @@ DMA_HDRS     := fft16.h fft_dma.h
 DMA_GEN      := vectors/gen_dma_vectors.py
 DMA_VEC      := vectors/fft_dma_vectors.csv
 
-.PHONY: all gen test clean
+REGS_GEN     := ../scripts/gen_regs.py
+REGS_YAML    := ../specs/registers.yaml
+REGS_HDR     := gvp_regs.h
+
+REGRESS_QUICK_FFT16 := 100
+REGRESS_QUICK_DMA   := 50
+REGRESS_FULL_FFT16  := 10000
+REGRESS_FULL_DMA    := 2000
+
+.PHONY: all gen test clean regs regs-check regress-quick regress-full clean-regress
 
 all: $(FFT16_BIN) $(DMA_BIN)
 
@@ -46,5 +55,32 @@ test: $(FFT16_BIN) $(DMA_BIN) $(FFT16_VEC) $(DMA_VEC)
 	@echo
 	./$(DMA_BIN) $(DMA_VEC)
 
+regs $(REGS_HDR): $(REGS_YAML) $(REGS_GEN)
+	$(PYTHON) $(REGS_GEN)
+
+regs-check:
+	$(PYTHON) $(REGS_GEN) --check
+
+# Random regression. Each run emits timestamped CSVs under vectors/ so past
+# runs are preserved for reproduction; seeds are logged in the generator
+# output. Use SEED=<n> to force a specific seed, or CASES=<n> to override
+# the case count for this invocation.
+regress-quick: $(FFT16_BIN) $(DMA_BIN)
+	$(PYTHON) $(FFT16_GEN) --regress --num-cases $(or $(CASES),$(REGRESS_QUICK_FFT16)) $(if $(SEED),--seed $(SEED))
+	$(PYTHON) $(DMA_GEN)   --regress --num-cases $(or $(CASES),$(REGRESS_QUICK_DMA))   $(if $(SEED),--seed $(SEED))
+	./$(FFT16_BIN) $$(ls -t vectors/fft16_random_*.csv    | head -1)
+	@echo
+	./$(DMA_BIN)   $$(ls -t vectors/fft_dma_random_*.csv  | head -1)
+
+regress-full: $(FFT16_BIN) $(DMA_BIN)
+	$(PYTHON) $(FFT16_GEN) --regress --num-cases $(or $(CASES),$(REGRESS_FULL_FFT16)) $(if $(SEED),--seed $(SEED))
+	$(PYTHON) $(DMA_GEN)   --regress --num-cases $(or $(CASES),$(REGRESS_FULL_DMA))   $(if $(SEED),--seed $(SEED))
+	./$(FFT16_BIN) $$(ls -t vectors/fft16_random_*.csv    | head -1)
+	@echo
+	./$(DMA_BIN)   $$(ls -t vectors/fft_dma_random_*.csv  | head -1)
+
 clean:
 	rm -f $(FFT16_BIN) $(DMA_BIN)
+
+clean-regress:
+	rm -f vectors/fft16_random_*.csv vectors/fft_dma_random_*.csv

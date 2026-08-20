@@ -9,6 +9,10 @@
 c_model/test_fft16
 c_model/test_fft_dma
 
+# Random regression vectors (timestamped per run; reproducible via --seed)
+c_model/vectors/fft16_random_*.csv
+c_model/vectors/fft_dma_random_*.csv
+
 # Editor / backup files
 *.swp
 *.swo

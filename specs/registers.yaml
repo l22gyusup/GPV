@@ -1,0 +1,191 @@
+# ----------------------------------------------------------------------------
+# File        : registers.yaml
+# Description : Single source of truth for the GVP DUT register map.
+#               Generators in scripts/ consume this file to emit C headers,
+#               SystemVerilog packages, and Python modules. Keep this file in
+#               sync with docs/GVP_RTL_SPEC.md Section 4.
+# Author      : Gyusup LEE <gyu2910@waric.co.kr>
+# Created     : 2026-08-20
+# Copyright   : (c) 2026 Gyusup LEE. All rights reserved.
+# ----------------------------------------------------------------------------
+
+device:
+  name: gvp
+  addr_bits: 12
+  data_bits: 32
+
+# Access legend:
+#   RO   : read-only
+#   RW   : read / write
+#   W1S  : write 1 to set  (hardware clears)
+#   W1TC : write 1 to clear
+#   COR  : clear on read
+#
+# Field 'bits' is either a single bit "N" or a range "MSB:LSB".
+# All fields are unsigned unless noted.
+
+registers:
+  - name: CTRL
+    offset: 0x00
+    access: RW
+    reset: 0x00000000
+    description: Control and handshake register (ap_ctrl_hs)
+    fields:
+      - {name: ap_start,     bits: "0",    access: W1S,  reset: 0}
+      - {name: ap_done,      bits: "1",    access: COR,  reset: 0}
+      - {name: ap_idle,      bits: "2",    access: RO,   reset: 1}
+      - {name: ap_ready,     bits: "3",    access: RO,   reset: 0}
+      - {name: auto_restart, bits: "7",    access: RW,   reset: 0}
+
+  - name: GIE
+    offset: 0x04
+    access: RW
+    reset: 0x00000000
+    description: Global interrupt enable
+    fields:
+      - {name: gie, bits: "0", access: RW, reset: 0}
+
+  - name: IER
+    offset: 0x08
+    access: RW
+    reset: 0x00000000
+    description: IP interrupt enable
+    fields:
+      - {name: ap_done_int,  bits: "0", access: RW, reset: 0}
+      - {name: ap_ready_int, bits: "1", access: RW, reset: 0}
+      - {name: rd_err_int,   bits: "2", access: RW, reset: 0}
+      - {name: wr_err_int,   bits: "3", access: RW, reset: 0}
+
+  - name: ISR
+    offset: 0x0C
+    access: W1TC
+    reset: 0x00000000
+    description: IP interrupt status (write 1 to clear)
+    fields:
+      - {name: ap_done_int,  bits: "0", access: W1TC, reset: 0}
+      - {name: ap_ready_int, bits: "1", access: W1TC, reset: 0}
+      - {name: rd_err_int,   bits: "2", access: W1TC, reset: 0}
+      - {name: wr_err_int,   bits: "3", access: W1TC, reset: 0}
+
+  - name: RD_ADDR_LO
+    offset: 0x10
+    access: RW
+    reset: 0x00000000
+    description: Read base address, bits [31:0]
+
+  - name: RD_ADDR_HI
+    offset: 0x14
+    access: RW
+    reset: 0x00000000
+    description: Read base address, bits [63:32]
+
+  - name: WR_ADDR_LO
+    offset: 0x18
+    access: RW
+    reset: 0x00000000
+    description: Write base address, bits [31:0]
+
+  - name: WR_ADDR_HI
+    offset: 0x1C
+    access: RW
+    reset: 0x00000000
+    description: Write base address, bits [63:32]
+
+  - name: NUM_FFTS
+    offset: 0x20
+    access: RW
+    reset: 0x00000000
+    description: Number of 16-point FFTs per activation
+
+  - name: MODE
+    offset: 0x24
+    access: RW
+    reset: 0x00000000
+    description: Operating mode select
+    fields:
+      - {name: mode, bits: "1:0", access: RW, reset: 0}
+    enums:
+      mode:
+        FFT:        0
+        READ_ONLY:  1
+        WRITE_ONLY: 2
+
+  - name: FFT_CFG
+    offset: 0x28
+    access: RW
+    reset: 0x00000000
+    description: Reserved for future FFT configuration
+
+  - name: STATUS
+    offset: 0x2C
+    access: RO
+    reset: 0x00000000
+    description: Error / status flags (auto-clear on ap_start)
+    fields:
+      - {name: rd_error, bits: "0", access: RO, reset: 0}
+      - {name: wr_error, bits: "1", access: RO, reset: 0}
+      - {name: overflow, bits: "2", access: RO, reset: 0}
+
+  - name: CYCLE_CNT
+    offset: 0x30
+    access: RO
+    reset: 0x00000000
+    description: Cycles between ap_start and ap_done (saturating)
+
+  - name: RD_BEAT_CNT
+    offset: 0x34
+    access: RO
+    reset: 0x00000000
+    description: R-channel data-beat handshakes this activation
+
+  - name: WR_BEAT_CNT
+    offset: 0x38
+    access: RO
+    reset: 0x00000000
+    description: W-channel data-beat handshakes this activation
+
+  - name: RD_LAT_ACC
+    offset: 0x3C
+    access: RO
+    reset: 0x00000000
+    description: Read latency accumulator (AR to RLAST, aggregate, saturating)
+
+  - name: WR_LAT_ACC
+    offset: 0x40
+    access: RO
+    reset: 0x00000000
+    description: Write latency accumulator (AW to B, aggregate, saturating)
+
+  - name: MO_MAX
+    offset: 0x44
+    access: RO
+    reset: 0x00000000
+    description: Peak outstanding transaction counts (per master, saturating)
+    fields:
+      - {name: rd_mo_max, bits: "15:0",  access: RO, reset: 0}
+      - {name: wr_mo_max, bits: "31:16", access: RO, reset: 0}
+
+  - name: RD_TXN_CNT
+    offset: 0x48
+    access: RO
+    reset: 0x00000000
+    description: Completed read transactions this activation (RLAST count)
+
+  - name: WR_TXN_CNT
+    offset: 0x4C
+    access: RO
+    reset: 0x00000000
+    description: Completed write transactions this activation (B handshake count)
+
+  - name: MAPPER_CTRL
+    offset: 0x50
+    access: RW
+    reset: 0x00000000
+    description: ID mapper policy selection
+    fields:
+      - {name: policy, bits: "1:0", access: RW, reset: 0}
+    enums:
+      policy:
+        SEQUENTIAL:  0
+        ROUND_ROBIN: 1
+        RANDOM:      2

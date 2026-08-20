@@ -9,9 +9,12 @@
 # Copyright   : (c) 2026 Gyusup LEE. All rights reserved.
 #------------------------------------------------------------------------------
 
+import argparse
 import csv
+import datetime
 import os
 import sys
+import time
 
 import numpy as np
 
@@ -64,6 +67,55 @@ def counter_pattern(n_samples):
             im_raw -= 0x10000
         x[n] = complex(re_raw / 16384.0, im_raw / 16384.0)
     return x
+
+
+SRC_REGION_LO   = 0x0100
+SRC_REGION_HI   = 0x8000
+DST_REGION_LO   = 0x8000
+DST_REGION_HI   = 0xF000
+ADDR_ALIGN      = 32
+MAX_NUM_FFTS    = 20
+
+
+def _random_aligned_addr(rng, base_lo, base_hi, num_ffts):
+    max_bytes  = num_ffts * FFT_POINTS * SAMPLE_BYTES
+    hi_limit   = base_hi - max_bytes
+    slot_count = (hi_limit - base_lo) // ADDR_ALIGN
+    slot       = int(rng.integers(0, slot_count))
+    return base_lo + slot * ADDR_ALIGN
+
+
+def build_random_scenarios(num_cases, seed):
+    rng = np.random.default_rng(seed=seed)
+    scenarios = []
+    modes = [MODE_FFT, MODE_READ_ONLY, MODE_WRITE_ONLY]
+
+    for i in range(num_cases):
+        mode     = int(rng.choice(modes))
+        num_ffts = int(rng.integers(1, MAX_NUM_FFTS + 1))
+        src      = _random_aligned_addr(rng, SRC_REGION_LO, SRC_REGION_HI,
+                                        num_ffts)
+        dst      = _random_aligned_addr(rng, DST_REGION_LO, DST_REGION_HI,
+                                        num_ffts)
+        n_samples = FFT_POINTS * num_ffts
+
+        if mode == MODE_FFT:
+            x   = rand_data(n_samples, rng)
+            exp = batch_fft(x, num_ffts)
+        elif mode == MODE_READ_ONLY:
+            x   = rand_data(n_samples, rng)
+            exp = np.zeros(n_samples, dtype=complex)
+        else:
+            x   = np.zeros(n_samples, dtype=complex)
+            exp = counter_pattern(n_samples)
+
+        scenarios.append({
+            "id": i, "name": f"random_{i:06d}", "mode": mode,
+            "num_ffts": num_ffts, "src": src, "dst": dst,
+            "in": x, "exp": exp,
+        })
+
+    return scenarios
 
 
 def build_scenarios():
@@ -157,12 +209,43 @@ def write_csv(path, scenarios):
 
 
 def main():
-    out_dir  = os.path.dirname(os.path.abspath(__file__))
-    out_path = os.path.join(out_dir, "fft_dma_vectors.csv")
-    scenarios = build_scenarios()
-    total_rows = sum(FFT_POINTS * s["num_ffts"] for s in scenarios)
-    write_csv(out_path, scenarios)
-    print(f"Wrote {len(scenarios)} scenarios ({total_rows} rows) to {out_path}")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--regress", action="store_true",
+                        help="Emit a random regression set instead of the "
+                             "curated fixed scenarios.")
+    parser.add_argument("--num-cases", type=int, default=200,
+                        help="Random case count (regress mode only)")
+    parser.add_argument("--seed", type=int, default=None,
+                        help="RNG seed (regress mode; default: current epoch)")
+    parser.add_argument("--out", default=None,
+                        help="Output path (default: curated → "
+                             "vectors/fft_dma_vectors.csv; regress → "
+                             "vectors/fft_dma_random_<timestamp>.csv)")
+    args = parser.parse_args()
+
+    out_dir = os.path.dirname(os.path.abspath(__file__))
+
+    if args.regress:
+        seed = args.seed if args.seed is not None else int(time.time())
+        scenarios = build_random_scenarios(args.num_cases, seed)
+        if args.out is None:
+            stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            out_path = os.path.join(out_dir, f"fft_dma_random_{stamp}.csv")
+        else:
+            out_path = args.out
+        total_rows = sum(FFT_POINTS * s["num_ffts"] for s in scenarios)
+        write_csv(out_path, scenarios)
+        print(f"Wrote {len(scenarios)} random scenarios "
+              f"({total_rows} rows, seed={seed}) to {out_path}")
+    else:
+        out_path = (args.out if args.out is not None
+                    else os.path.join(out_dir, "fft_dma_vectors.csv"))
+        scenarios = build_scenarios()
+        total_rows = sum(FFT_POINTS * s["num_ffts"] for s in scenarios)
+        write_csv(out_path, scenarios)
+        print(f"Wrote {len(scenarios)} scenarios ({total_rows} rows) "
+              f"to {out_path}")
+
     return 0
 
 
